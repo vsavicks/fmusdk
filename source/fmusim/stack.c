@@ -6,7 +6,11 @@
 
 #include <stdio.h>
 #include <assert.h>
+#if __APPLE__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include "stack.h"
 
 Stack* stackNew(int initialSize, int inc){

@@ -34,10 +34,15 @@
 #define DLL_DIR   "binaries\\win32\\"
 #define DLL_SUFFIX ".dll"
 #else
+#if __APPLE__
+#define DLL_DIR   "binaries/macosx64/"
+#define DLL_SUFFIX ".dylib"
+#else /* __APPLE__ */
 #define DLL_DIR   "binaries/linux32/"
 #define DLL_SUFFIX ".so"
+#endif /* __APPLE__ */
 #include <unistd.h>
-#endif
+#endif /* WINDOWS */
 #define BUFSIZE 4096
 
 FMU fmu; // the fmu to simulate

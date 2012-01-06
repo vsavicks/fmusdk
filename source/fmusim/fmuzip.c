@@ -2,13 +2,21 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#endif
 
 #ifdef _MSC_VER
 #include <windows.h>
 #else
 #include <unistd.h>
 #endif
+
+// Mac OS X installation instructinos for 7z:
+//  1. Go to http://leifertin.info/app/eZ7z/ and install ez7z.
+//  2. Copy the 7za binary to /usr/local/bin/7z:
+//        sudo cp /Volumes/Ez7z\ 2.12/Ez7z.app/Contents/*/7za /usr/local/bin/7z
 
 #define UNZIP_CMD "7z x -aoa -o"
 #define BUFSIZE 4096
