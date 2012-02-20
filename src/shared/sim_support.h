@@ -20,7 +20,12 @@
 #define DLL_DIR   "binaries/darwin64/"
 #define DLL_SUFFIX ".dylib"
 #else /*__APPLE__*/
+// Linux
+#ifdef __x86_64
+#define DLL_DIR   "binaries/linux64/"
+#else
 #define DLL_DIR   "binaries/linux32/"
+#endif /*__x86_64*/
 #define DLL_SUFFIX ".so"
 #endif /*__APPLE__*/
 #endif /*WINDOWS*/

@@ -31,15 +31,15 @@ fmiValueReference vrStates[NUMBER_OF_STATES] = STATES;
 // Private helpers used below to validate function arguments
 // ---------------------------------------------------------------------------
 
-/* static fmiBoolean invalidNumber(ModelInstance* comp, const char* f, const char* arg, int n, int nExpected){ */
-/*     if (n != nExpected) { */
-/*         comp->state = modelError; */
-/*         comp->functions.logger(comp, comp->instanceName, fmiError, "error",  */
-/*                 "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected); */
-/*         return fmiTrue; */
-/*     } */
-/*     return fmiFalse; */
-/* } */
+static fmiBoolean invalidNumber(ModelInstance* comp, const char* f, const char* arg, int n, int nExpected){
+    if (n != nExpected) {
+        comp->state = modelError;
+        comp->functions.logger(comp, comp->instanceName, fmiError, "error",
+                "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected);
+        return fmiTrue;
+    }
+    return fmiFalse;
+}
 
 static fmiBoolean invalidState(ModelInstance* comp, const char* f, int statesExpected){
     if (!comp) 

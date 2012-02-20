@@ -23,6 +23,7 @@
 #ifndef _MSC_VER
 #define MAX_PATH 1024
 #include <unistd.h>  // mkdtemp()
+#include <dlfcn.h> //dlsym()
 #endif
 
 extern FMU fmu;
