@@ -749,7 +749,10 @@ void freeElement(void* element){
     // free child nodes
     switch (getAstNodeType(e->type)) {
         case astElement:
-            freeElement((void**)(Element*)e);
+	    // Add an empty case here to avoid warnings from -Wall
+	    // The element e gets freed elsewhere, if we free it
+	    // here,  we get warnings
+	    //freeElement((void**)(Element*)e);
             break;
         case astListElement:
             freeList((void*)((ListElement*)e)->list);
