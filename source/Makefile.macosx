@@ -25,11 +25,11 @@ all:
 	mkdir fmu
 	mkdir fmu/binaries
 	#mkdir fmu/binaries/linux32
-	mkdir fmu/binaries/macosx64
+	mkdir fmu/binaries/darwin64
 	mkdir fmu/sources
 	mkdir fmu/documentation
 	#cp $< fmu/binaries/linux32
-	cp $< fmu/binaries/macosx64
+	cp $< fmu/binaries/darwin64
 	-cp *.c fmu/sources
 	-cp *.h fmu/sources
 	cp *.html fmu/documentation
