@@ -103,7 +103,7 @@ static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char 
 }
 
 int main(int argc, char *argv[]) {
-    const char* fmuFileName;
+    char* fmuFileName;
     
     // parse command line arguments and load the FMU
     double tEnd = 1.0;

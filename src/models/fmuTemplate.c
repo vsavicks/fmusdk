@@ -31,15 +31,15 @@ fmiValueReference vrStates[NUMBER_OF_STATES] = STATES;
 // Private helpers used below to validate function arguments
 // ---------------------------------------------------------------------------
 
-static fmiBoolean invalidNumber(ModelInstance* comp, const char* f, const char* arg, int n, int nExpected){
-    if (n != nExpected) {
-        comp->state = modelError;
-        comp->functions.logger(comp, comp->instanceName, fmiError, "error", 
-                "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected);
-        return fmiTrue;
-    }
-    return fmiFalse;
-}
+/* static fmiBoolean invalidNumber(ModelInstance* comp, const char* f, const char* arg, int n, int nExpected){ */
+/*     if (n != nExpected) { */
+/*         comp->state = modelError; */
+/*         comp->functions.logger(comp, comp->instanceName, fmiError, "error",  */
+/*                 "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected); */
+/*         return fmiTrue; */
+/*     } */
+/*     return fmiFalse; */
+/* } */
 
 static fmiBoolean invalidState(ModelInstance* comp, const char* f, int statesExpected){
     if (!comp) 
@@ -168,7 +168,7 @@ void freeInstance(char* fname, fmiComponent c) {
     if (comp->s) {
         int i;
         for (i=0; i<NUMBER_OF_STRINGS; i++){
-            if (comp->s[i]) comp->functions.freeMemory(comp->s[i]);
+            if (comp->s[i]) comp->functions.freeMemory((void*)comp->s[i]);
         }
         comp->functions.freeMemory(comp->s);
     }
@@ -263,7 +263,7 @@ fmiStatus fmiSetBoolean(fmiComponent c, const fmiValueReference vr[], size_t nvr
 }
 
 fmiStatus fmiSetString(fmiComponent c, const fmiValueReference vr[], size_t nvr, const fmiString value[]){
-    int i, n;
+    int i;
     ModelInstance* comp = (ModelInstance *)c;
     if (invalidState(comp, "fmiSetString", modelInstantiated|modelInitialized))
          return fmiError;
@@ -274,7 +274,7 @@ fmiStatus fmiSetString(fmiComponent c, const fmiValueReference vr[], size_t nvr,
     if (comp->loggingOn)
         comp->functions.logger(c, comp->instanceName, fmiOK, "log", "fmiSetString: nvr = %d",  nvr);
     for (i=0; i<nvr; i++) {
-        char* string = comp->s[vr[i]];
+        const char* string = comp->s[vr[i]];
         if (vrOutOfRange(comp, "fmiSetString", vr[i], NUMBER_OF_STRINGS))
             return fmiError;
         if (comp->loggingOn) comp->functions.logger(c, comp->instanceName, fmiOK, "log", 
@@ -282,7 +282,7 @@ fmiStatus fmiSetString(fmiComponent c, const fmiValueReference vr[], size_t nvr,
         if (nullPointer(comp, "fmiSetString", "value[i]", value[i]))
             return fmiError;
         if (string==NULL || strlen(string) < strlen(value[i])) {
-            if (string) comp->functions.freeMemory(string);
+            if (string) comp->functions.freeMemory((void*)string);
             comp->s[vr[i]] = comp->functions.allocateMemory(1+strlen(value[i]), sizeof(char));
             if (!comp->s[vr[i]]) {
                 comp->state = modelError;

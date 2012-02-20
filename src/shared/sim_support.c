@@ -206,6 +206,7 @@ static void* getAdr(int* s, FMU *fmu, const char* functionName){
     char name[BUFSIZE];
     void* fp;
     sprintf(name, "%s_%s", getModelIdentifier(fmu->modelDescription), functionName);
+    printf("getAdr: %s\n", name);
 #ifdef _MSC_VER
     fp = GetProcAddress(fmu->dllHandle, name);
 #else
@@ -213,6 +214,9 @@ static void* getAdr(int* s, FMU *fmu, const char* functionName){
 #endif
     if (!fp) {
         printf ("warning: Function %s not found in %s\n", name, DLL_SUFFIX);
+#ifdef __APPLE__
+        printf ("Error was: %s\n", dlerror());
+#endif 
         *s = 0; // mark dll load as 'failed'        
     }
     return fp;
@@ -239,7 +243,7 @@ static int loadDll(const char* dllPath, FMU *fmu) {
     if (s==0) { 
         s = 1; // work around bug for FMUs exported using Dymola 2012 and SimulationX 3.x
         fmu->getTypesPlatform    = (fGetTypesPlatform)   getAdr(&s, fmu, "fmiGetModelTypesPlatform");
-        if (s==1) printf("  using fmiGetModelTypesPlatform instead\n", dllPath);
+        if (s==1) printf("  using fmiGetModelTypesPlatform instead\n");
     }
     fmu->instantiateSlave        = (fInstantiateSlave)   getAdr(&s, fmu, "fmiInstantiateSlave");
     fmu->initializeSlave         = (fInitializeSlave)    getAdr(&s, fmu, "fmiInitializeSlave");    
@@ -378,7 +382,7 @@ void outputRow(FMU *fmu, fmiComponent c, double time, FILE* file, char separator
             // output names only
             if (separator==',') {
                 // treat array element, e.g. print a[1, 2] as a[1.2]
-                char* s = getName(sv);
+                char* s = strdup(getName(sv));
                 fprintf(file, "%c", separator);
                 while (*s) {
                    if (*s!=' ') fprintf(file, "%c", *s==',' ? '.' : *s);
