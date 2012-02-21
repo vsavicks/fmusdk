@@ -12,7 +12,7 @@ This is a port of the Windows fmusdk 1.0.2 from to Mac OS X and Linux.
 The original Windows fmusdk sources were download from
 http://www.qtronic.de/doc/fmusdk.zip
 
-This port includes Linux changes by Michael Tillman for fmusdk1.0,
+This port includes Linux changes by Michael Tiller for fmusdk1.0,
 see http://github.com/mtiller/fmusdk
 
 The Mac OS X/Linux port to fmusdk1.0.2 was done by Christopher Brooks,
