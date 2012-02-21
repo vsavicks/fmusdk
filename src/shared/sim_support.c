@@ -87,7 +87,6 @@ int unzip(const char *zipPath, const char *outPath) {
 int unzip(const char *zipPath, const char *outPath) {
     int code;
     char cwd[BUFSIZE];
-    char binPath[BUFSIZE];
     int n;
     char* cmd;
 
@@ -173,7 +172,6 @@ static void* getAdr(int* s, FMU *fmu, const char* functionName){
     char name[BUFSIZE];
     void* fp;
     sprintf(name, "%s_%s", getModelIdentifier(fmu->modelDescription), functionName);
-    printf("getAdr: %s\n", name);
 #ifdef _MSC_VER
     fp = GetProcAddress(fmu->dllHandle, name);
 #else
@@ -184,6 +182,7 @@ static void* getAdr(int* s, FMU *fmu, const char* functionName){
 #ifdef __APPLE__
         printf ("Error was: %s\n", dlerror());
 #endif 
+        printf ("If some symbols are found, but not others, check LD_LIBRARY_PATH or DYLD_LIBRARYPATH\n");
         *s = 0; // mark dll load as 'failed'        
     }
     return fp;
@@ -192,7 +191,10 @@ static void* getAdr(int* s, FMU *fmu, const char* functionName){
 // Load the given dll and set function pointers in fmu
 // Return 0 to indicate failure
 static int loadDll(const char* dllPath, FMU *fmu) {
-    int x = 1, s = 1;
+    int s = 1;
+#ifdef FMI_COSIMULATION
+    int x = 1;
+#endif
 #ifdef _MSC_VER
     HANDLE h = LoadLibrary(dllPath);
 #else

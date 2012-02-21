@@ -38,6 +38,10 @@
 #include "fmi_me.h"
 #include "sim_support.h"
 
+#ifdef __APPLE__
+#include <string.h> //strerror()
+#endif
+
 FMU fmu; // the fmu to simulate
 
 // simulate the given FMU using the forward euler method.
@@ -45,7 +49,7 @@ FMU fmu; // the fmu to simulate
 // state events are checked and fired only at the end of an Euler step. 
 // the simulator may therefore miss state events and fires state events typically too late.
 static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char separator) {
-    int i, n;
+    int i;
     double dt, tPre;
     fmiBoolean timeEvent, stateEvent, stepEvent;
     double time;  
@@ -87,7 +91,7 @@ static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char 
         z    =  (double *) calloc(nz, sizeof(double));
         prez =  (double *) calloc(nz, sizeof(double));
     }
-    if (!x || !xdot || nz>0 && (!z || !prez)) return error("out of memory");
+    if (!x || !xdot || (nz>0 && (!z || !prez))) return error("out of memory");
 
     // open result file
     if (!(file=fopen(RESULT_FILE, "w"))) {

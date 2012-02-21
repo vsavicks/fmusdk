@@ -27,19 +27,6 @@ fmiValueReference vrStates[NUMBER_OF_STATES] = STATES;
 #ifndef max
 #define max(a,b) ((a)>(b) ? (a) : (b))
 #endif
-// ---------------------------------------------------------------------------
-// Private helpers used below to validate function arguments
-// ---------------------------------------------------------------------------
-
-static fmiBoolean invalidNumber(ModelInstance* comp, const char* f, const char* arg, int n, int nExpected){
-    if (n != nExpected) {
-        comp->state = modelError;
-        comp->functions.logger(comp, comp->instanceName, fmiError, "error",
-                "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected);
-        return fmiTrue;
-    }
-    return fmiFalse;
-}
 
 static fmiBoolean invalidState(ModelInstance* comp, const char* f, int statesExpected){
     if (!comp) 
@@ -296,7 +283,9 @@ fmiStatus fmiSetString(fmiComponent c, const fmiValueReference vr[], size_t nvr,
 }
 
 fmiStatus fmiGetReal(fmiComponent c, const fmiValueReference vr[], size_t nvr, fmiReal value[]) {
+#if NUMBER_OF_REALS>0
     int i;
+#endif
     ModelInstance* comp = (ModelInstance *)c;
     if (invalidState(comp, "fmiGetReal", not_modelError))
         return fmiError;
@@ -466,11 +455,15 @@ fmiStatus fmiDoStep(fmiComponent c, fmiReal currentCommunicationPoint,
     ModelInstance* comp = (ModelInstance *)c;
     fmiCallbackLogger log = comp->functions.logger;
     double h = communicationStepSize / 10;
-    int k,i;
+    int i,k;
     const int n = 10; // how many Euler steps to perform for one do step
+#if NUMBER_OF_REALS>0
     double prevState[max(NUMBER_OF_STATES, 1)];
+#endif
+#if NUMBER_OF_EVENT_INDICATORS>0
     double prevEventIndicators[max(NUMBER_OF_EVENT_INDICATORS, 1)];
     int stateEvent = 0;
+#endif
 
     if (invalidState(comp, "fmiDoStep", modelInitialized))
          return fmiError;
@@ -590,6 +583,16 @@ fmiStatus fmiGetStringStatus(fmiComponent c, const fmiStatusKind s, fmiString*  
 // FMI functions: only for Model Exchange 1.0
 // ---------------------------------------------------------------------------
 
+static fmiBoolean invalidNumber(ModelInstance* comp, const char* f, const char* arg, int n, int nExpected){
+    if (n != nExpected) {
+        comp->state = modelError;
+        comp->functions.logger(comp, comp->instanceName, fmiError, "error",
+                "%s: Invalid argument %s = %d. Expected %d.", f, arg, n, nExpected);
+        return fmiTrue;
+    }
+    return fmiFalse;
+}
+
 const char* fmiGetModelTypesPlatform() {
     return fmiModelTypesPlatform;
 }
@@ -616,7 +619,9 @@ fmiStatus fmiSetTime(fmiComponent c, fmiReal time) {
 
 fmiStatus fmiSetContinuousStates(fmiComponent c, const fmiReal x[], size_t nx){
     ModelInstance* comp = (ModelInstance *)c;
+#if NUMBER_OF_REALS>0
     int i;
+#endif
     if (invalidState(comp, "fmiSetContinuousStates", modelInitialized))
          return fmiError;
     if (invalidNumber(comp, "fmiSetContinuousStates", "nx", nx, NUMBER_OF_STATES)) 
@@ -665,7 +670,9 @@ fmiStatus fmiCompletedIntegratorStep(fmiComponent c, fmiBoolean* callEventUpdate
 }
 
 fmiStatus fmiGetStateValueReferences(fmiComponent c, fmiValueReference vrx[], size_t nx){
+#if NUMBER_OF_REALS>0
     int i;
+#endif
     ModelInstance* comp = (ModelInstance *)c;
     if (invalidState(comp, "fmiGetStateValueReferences", not_modelError))
         return fmiError;
@@ -684,7 +691,9 @@ fmiStatus fmiGetStateValueReferences(fmiComponent c, fmiValueReference vrx[], si
 }
 
 fmiStatus fmiGetContinuousStates(fmiComponent c, fmiReal states[], size_t nx){
+#if NUMBER_OF_REALS>0
     int i;
+#endif
     ModelInstance* comp = (ModelInstance *)c;
     if (invalidState(comp, "fmiGetContinuousStates", not_modelError))
         return fmiError;
@@ -721,7 +730,9 @@ fmiStatus fmiGetNominalContinuousStates(fmiComponent c, fmiReal x_nominal[], siz
 }
 
 fmiStatus fmiGetDerivatives(fmiComponent c, fmiReal derivatives[], size_t nx) {
+#if NUMBER_OF_STATES>0
     int i;
+#endif
     ModelInstance* comp = (ModelInstance *)c;
     if (invalidState(comp, "fmiGetDerivatives", not_modelError))
          return fmiError;
@@ -741,7 +752,9 @@ fmiStatus fmiGetDerivatives(fmiComponent c, fmiReal derivatives[], size_t nx) {
 }
 
 fmiStatus fmiGetEventIndicators(fmiComponent c, fmiReal eventIndicators[], size_t ni) {
+#if NUMBER_OF_EVENT_INDICATORS>0
     int i;
+#endif
     ModelInstance* comp = (ModelInstance *)c;
     if (invalidState(comp, "fmiGetEventIndicators", not_modelError))
         return fmiError;

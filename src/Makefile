@@ -49,7 +49,8 @@ SHARED_DEPS = \
 # Create the binaries in the current directory because co_simulation already has
 # a directory named "fmusim_cs"
 fmusim_cs: $(CO_SIMULATION_DEPS) $(SHARED_DEPS)
-	$(CC) -g -Wall -DFMI_COSIMULATION -Ico_simulation/fmusim_cs -Ico_simulation/include -Ishared \
+	$(CC) -g -Wall -DFMI_COSIMULATION -Ico_simulation/fmusim_cs -Ico_simulation/include \
+		-Ishared \
 		co_simulation/fmusim_cs/main.c $(SHARED_SRCS) \
 		-o $@ -lexpat -ldl
 	cp fmusim_cs ../bin

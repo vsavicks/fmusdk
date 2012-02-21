@@ -60,6 +60,7 @@ all:
 	if [ ! -d ../../../fmu/$(CSORME) ]; then \
 		mkdir -p ../../../fmu/$(CSORME); \
 	fi
+	rm -f ../../../fmu/$(CSORME)/$@
 	(cd fmu; zip -r ../../../../fmu/$(CSORME)/$@ *)
 
 clean:
