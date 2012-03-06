@@ -45,23 +45,17 @@ all:
 
 %.fmu: %.$(SHARED_LIBRARY_SUFFIX)
 	rm -rf fmu
-	mkdir fmu
-	mkdir fmu/binaries
-	mkdir fmu/binaries/$(ARCH)
-	mkdir fmu/sources
-	mkdir fmu/documentation
+	mkdir -p fmu/binaries/$(ARCH) fmu/sources fmu/documentation
 	cp $< fmu/binaries/$(ARCH)
-	-cp *.c fmu/sources
-	-cp *.h fmu/sources
-	-cp *.html fmu/documentation
-	-cp *.png fmu/documentation
+	-cp *.c *.h fmu/sources
+	-cp *.html *.png fmu/documentation
 	cat modelDescription.xml ../$(CSORME).xml > fmu/modelDescription.xml
 	cp model.png fmu
-	if [ ! -d ../../../fmu/$(CSORME) ]; then \
+	@if [ ! -d ../../../fmu/$(CSORME) ]; then \
+		echo "mkdir -p ../../../fmu/$(CSORME)"; \
 		mkdir -p ../../../fmu/$(CSORME); \
 	fi
-	rm -f ../../../fmu/$(CSORME)/$@
-	(cd fmu; zip -r ../../../../fmu/$(CSORME)/$@ *)
+	(cd fmu; zip -q -r ../../../../fmu/$(CSORME)/$@ *)
 
 clean:
 	(cd bouncingBall; make dirclean)

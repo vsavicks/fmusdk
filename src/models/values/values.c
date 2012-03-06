@@ -41,29 +41,38 @@ const char* month[] = {
     "august","sept","october","november","december"
 };
 
-fmiStatus setString(fmiComponent comp, fmiValueReference vr, fmiString value);
+static fmiStatus setString(fmiComponent comp, fmiValueReference vr, fmiString value);
+
+// Linux: Functions in this file are declared to be static so
+// that when the fmu_* method invokes one of these methods, then
+// it gets the definition in the same shared library instead
+// of getting the method with the same name in a previously
+// loaded shared library.
+
 // called by fmiInstantiateModel
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
-void setStartValues(ModelInstance *comp) {
+static void setStartValues(ModelInstance *comp) {
     r(x_) = 1;
     i(int_in_) = 2;
     i(int_out_) = 0;
     b(bool_in_) = fmiTrue;
     b(bool_out_) = fmiFalse;
     copy(string_in_, "a string");
+  printf("values.c setStartValues 90\n");
     copy(string_out_, month[0]);
+  printf("values.c setStartValues end\n");
 }
 
 // called by fmiInitialize() after setting eventInfo to defaults
 // Used to set the first time event, if any.
-void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
     eventInfo->upcomingTimeEvent   = fmiTrue;
     eventInfo->nextEventTime       = 1 + comp->time;
 }
 
 // called by fmiGetReal, fmiGetContinuousStates and fmiGetDerivatives
-fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
+static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
     switch (vr) {
         case x_     : return   r(x_);
         case der_x_ : return - r(x_);
@@ -72,7 +81,7 @@ fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
 }
 
 // called by fmiEventUpdate() after setting eventInfo to defaults
-void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
     eventInfo->upcomingTimeEvent   = fmiTrue;
     eventInfo->nextEventTime       = 1 + comp->time;
     i(int_out_) += 1;

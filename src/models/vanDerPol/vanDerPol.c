@@ -39,10 +39,16 @@
 // define state vector as vector of value references
 #define STATES { x0_, x1_ }
 
+// Linux: Functions in this file are declared to be static so
+// that when the fmu_* method invokes one of these methods, then
+// it gets the definition in the same shared library instead
+// of getting the method with the same name in a previously
+// loaded shared library.
+
 // called by fmiInstantiateModel
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
-void setStartValues(ModelInstance *comp) {
+static void setStartValues(ModelInstance *comp) {
     r(x0_) = 2;
     r(x1_) = 0;
     r(mu_) = 1;
@@ -50,11 +56,11 @@ void setStartValues(ModelInstance *comp) {
 
 // called by fmiInitialize() after setting eventInfo to defaults
 // Used to set the first time event, if any.
-void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
 }
 
 // called by fmiGetReal, fmiGetContinuousStates and fmiGetDerivatives
-fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
+static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
     switch (vr) {
         case x0_     : return r(x0_);
         case x1_     : return r(x1_);
@@ -66,7 +72,7 @@ fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
 }
 
 // Used to set the next time event, if any.
-void eventUpdate(fmiComponent comp, fmiEventInfo* eventInfo) {
+static void eventUpdate(fmiComponent comp, fmiEventInfo* eventInfo) {
 } 
 
 // include code that implements the FMI based on the above definitions

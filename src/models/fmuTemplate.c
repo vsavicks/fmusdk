@@ -21,7 +21,8 @@
 
 // array of value references of states
 #if NUMBER_OF_REALS>0
-fmiValueReference vrStates[NUMBER_OF_STATES] = STATES; 
+// Linux: declare vrStates to be static so that we get the local definition.
+static fmiValueReference vrStates[NUMBER_OF_STATES] = STATES; 
 #endif
 
 #ifndef max
@@ -64,7 +65,7 @@ static fmiBoolean vrOutOfRange(ModelInstance* comp, const char* f, fmiValueRefer
 // Private helpers used below to implement functions
 // ---------------------------------------------------------------------------
 
-fmiStatus setString(fmiComponent comp, fmiValueReference vr, fmiString value){
+static fmiStatus setString(fmiComponent comp, fmiValueReference vr, fmiString value){
     return fmiSetString(comp, &vr, 1, &value);
 }
 

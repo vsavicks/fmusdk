@@ -25,23 +25,29 @@
 // - if k is the vr of a real state, then k+1 is the vr of its derivative
 #define counter_ 0
 
+// Linux: Functions in this file are declared to be static so
+// that when the fmu_* method invokes one of these methods, then
+// it gets the definition in the same shared library instead
+// of getting the method with the same name in a previously
+// loaded shared library.
+
 // called by fmiInstantiateModel
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
-void setStartValues(ModelInstance *comp) {
+static void setStartValues(ModelInstance *comp) {
     i(counter_) = 1;
 }
 
 // called by fmiInitialize() after setting eventInfo to defaults
 // Used to set the first time event, if any.
-void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
     eventInfo->upcomingTimeEvent   = fmiTrue;
     eventInfo->nextEventTime       = 1 + comp->time;
 }
 
 // called by fmiEventUpdate() after setting eventInfo to defaults
 // Used to set the next time event, if any.
-void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
     i(counter_) += 1;
     if (i(counter_) == 13) 
         eventInfo->terminateSimulation = fmiTrue;

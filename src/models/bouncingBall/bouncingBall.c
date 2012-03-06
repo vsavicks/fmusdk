@@ -46,10 +46,16 @@
 // define initial state vector as vector of value references
 #define STATES { h_, v_ }
 
+// Linux: Functions in this file are declared to be static so
+// that when the fmu_* method invokes one of these methods, then
+// it gets the definition in the same shared library instead
+// of getting the method with the same name in a previously
+// loaded shared library.
+
 // called by fmiInstantiateModel
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
-void setStartValues(ModelInstance *comp) {
+static void setStartValues(ModelInstance *comp) {
     r(h_)     =  1;
     r(v_)     =  0;
     r(der_v_) = -9.81;
@@ -58,7 +64,7 @@ void setStartValues(ModelInstance *comp) {
 }
 
 // called by fmiGetReal, fmiGetContinuousStates and fmiGetDerivatives
-fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
+static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
     switch (vr) {
         case h_     : return r(h_);
         case der_h_ : return r(v_);
@@ -71,13 +77,13 @@ fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
 
 // called by fmiInitialize() after setting eventInfo to defaults
 // Used to set the first time event, if any.
-void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
 }
 
 // offset for event indicator, adds hysteresis and prevents z=0 at restart 
 #define EPS_INDICATORS 1e-14
 
-fmiReal getEventIndicator(ModelInstance* comp, int z) {
+static fmiReal getEventIndicator(ModelInstance* comp, int z) {
     switch (z) {
         case 0 : return r(h_) + (pos(0) ? EPS_INDICATORS : -EPS_INDICATORS);
         default: return 0;
@@ -85,7 +91,7 @@ fmiReal getEventIndicator(ModelInstance* comp, int z) {
 }
 
 // Used to set the next time event, if any.
-void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
+static void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
     if (pos(0)) {
         r(v_) = - r(e_) * r(v_);
     }
