@@ -47,7 +47,7 @@ SHARED_DEPS = \
 	shared/xml_parser.h
 
 # Set CFLAGS to -m32 to build for linux32
-#CFLAGS=-m32
+CFLAGS=-m32
 
 # Create the binaries in the current directory because co_simulation already has
 # a directory named "fmusim_cs"
@@ -59,7 +59,7 @@ fmusim_cs: $(CO_SIMULATION_DEPS) $(SHARED_DEPS)
 	cp fmusim_cs ../bin
 
 fmusim_me: $(MODEL_EXCHANGE_DEPS) $(SHARED_DEPS)
-	$(CC) $(CFLAG) -g -Wall -Imodel_exchange/fmusim_me -Imodel_exchange/include -Ishared \
+	$(CC) $(CFLAGS) -g -Wall -Imodel_exchange/fmusim_me -Imodel_exchange/include -Ishared \
 		model_exchange/fmusim_me/main.c $(SHARED_SRCS) \
 		-o $@ -lexpat -ldl
 	cp fmusim_me ../bin
