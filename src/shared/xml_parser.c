@@ -112,7 +112,7 @@ static int checkEnumValue(const char* enu);
 // enuNames[id] is the string representation of the enum value. 
 Enu getEnumValue(void* element, Att a, ValueStatus* vs) {
     const char* value = getString(element, a);
-    Enu id = valueDefined;
+    Enu id /*= valueDefined*/;
     if (!value) { 
         *vs = valueMissing;
         switch (a) {

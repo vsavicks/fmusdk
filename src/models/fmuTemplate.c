@@ -278,7 +278,7 @@ fmiStatus fmiSetString(fmiComponent c, const fmiValueReference vr[], size_t nvr,
                 return fmiError;
             }
         }
-        strcpy(comp->s[vr[i]], value[i]);
+        strcpy((char*) comp->s[vr[i]], value[i]);
     }
     return fmiOK;
 }
@@ -456,7 +456,10 @@ fmiStatus fmiDoStep(fmiComponent c, fmiReal currentCommunicationPoint,
     ModelInstance* comp = (ModelInstance *)c;
     fmiCallbackLogger log = comp->functions.logger;
     double h = communicationStepSize / 10;
-    int i,k;
+#if NUMBER_OF_EVENT_INDICATORS>0  || NUMBER_OF_REALS>0
+    int i;
+#endif
+    int k;
     const int n = 10; // how many Euler steps to perform for one do step
 #if NUMBER_OF_REALS>0
     double prevState[max(NUMBER_OF_STATES, 1)];
