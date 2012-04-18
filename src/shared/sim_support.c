@@ -303,7 +303,14 @@ void loadFMU(const char* fmuFileName) {
     dllPath = calloc(sizeof(char), strlen(tmpPath) + strlen(DLL_DIR) 
             + strlen( getModelIdentifier(fmu.modelDescription)) +  strlen(DLL_SUFFIX) + 1);
     sprintf(dllPath,"%s%s%s%s", tmpPath, DLL_DIR, getModelIdentifier(fmu.modelDescription), DLL_SUFFIX);
-    if (!loadDll(dllPath, &fmu)) exit(EXIT_FAILURE); 
+    if (!loadDll(dllPath, &fmu)) {
+        // try the alternative directory and suffix
+        dllPath = calloc(sizeof(char), strlen(tmpPath) + strlen(DLL_DIR2) 
+                + strlen( getModelIdentifier(fmu.modelDescription)) +  strlen(DLL_SUFFIX2) + 1);
+        sprintf(dllPath,"%s%s%s%s", tmpPath, DLL_DIR2, getModelIdentifier(fmu.modelDescription), DLL_SUFFIX2);
+        if (!loadDll(dllPath, &fmu)) exit(EXIT_FAILURE); 
+    }
+
     free(dllPath);
     free(fmuPath);
     free(tmpPath);
