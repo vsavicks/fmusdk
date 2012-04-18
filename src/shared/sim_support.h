@@ -15,24 +15,30 @@
 #if WINDOWS
 #define DLL_DIR   "binaries\\win32\\"
 #define DLL_SUFFIX ".dll"
+
+#define DLL_DIR2   "binaries\\win32\\"
+#define DLL_SUFFIX2 ".dll"
 #else
 #if __APPLE__
-
-// Use these for OpenModelica 1.8.1
-//#define DLL_DIR   "binaries/darwin-x86_64/"
-//#define DLL_SUFFIX ".so"
 
 // Use these for platforms other than OpenModelica
 #define DLL_DIR   "binaries/darwin64/"
 #define DLL_SUFFIX ".dylib"
 
+// Use these for OpenModelica 1.8.1
+#define DLL_DIR2   "binaries/darwin-x86_64/"
+#define DLL_SUFFIX2 ".so"
+
+
 #else /*__APPLE__*/
 // Linux
 #ifdef __x86_64
 #define DLL_DIR   "binaries/linux64/"
+#define DLL_DIR2   "binaries/linux32/"
 #else
-// It may be necessary to compile with -m32, see the Makefile
+// It may be necessary to compile with -m32, see ../Makefile
 #define DLL_DIR   "binaries/linux32/"
+#define DLL_DIR2   "binaries/linux64/"
 #endif /*__x86_64*/
 #define DLL_SUFFIX ".so"
 #endif /*__APPLE__*/
