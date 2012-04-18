@@ -55,7 +55,7 @@ static fmiBoolean vrOutOfRange(ModelInstance* comp, const char* f, fmiValueRefer
     if (vr >= end) {
         comp->functions.logger(comp, comp->instanceName, fmiError, "error",
                 "%s: Illegal value reference %u.", f, vr);
-        comp->state = fmiError;
+        comp->state = modelError;
         return fmiTrue;
     }
     return fmiFalse;
