@@ -195,7 +195,12 @@ static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char 
 
   // cleanup
   if(! eventInfo.terminateSimulation) fmu->terminate(c);
-  fmu->freeModelInstance(c);
+
+  // When importing a BouncingBall from OpenModelica 1.8.1, calling
+  // freeModelInstance will result in a segfault because free()
+  // is called twice.
+  //fmu->freeModelInstance(c);
+
   fclose(file);
   if (x!=NULL) free(x);
   if (xdot!= NULL) free(xdot);
