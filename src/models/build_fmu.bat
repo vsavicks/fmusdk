@@ -12,11 +12,13 @@ echo building FMU %2 - FMI for Model Exchange 1.0
 
 rem save env variable settings
 set PREV_PATH=%PATH%
-if defined INCLUDE set PREV_INCLUDE=%INLUDE%
+if defined INCLUDE set PREV_INCLUDE=%INCLUDE%
 if defined LIB     set PREV_LIB=%LIB%
 if defined LIBPATH set PREV_LIBPATH=%LIBPATH%
 
 rem setup the compiler
+if defined VS110COMNTOOLS (call "%VS110COMNTOOLS%\vsvars32.bat") else ^
+if defined VS100COMNTOOLS (call "%VS100COMNTOOLS%\vsvars32.bat") else ^
 if defined VS90COMNTOOLS (call "%VS90COMNTOOLS%\vsvars32.bat") else ^
 if defined VS80COMNTOOLS (call "%VS80COMNTOOLS%\vsvars32.bat") else ^
 goto noCompiler
@@ -71,7 +73,7 @@ if exist temp rmdir /S /Q temp
 
 rem undo variable settings performed by vsvars32.bat
 set PATH=%PREV_PATH%
-if defined PREV_INCLUDE set INCLUDE=%PREV_INLUDE%
+if defined PREV_INCLUDE set INCLUDE=%PREV_INCLUDE%
 if defined PREV_LIB     set LIB=%PREV_LIB%
 if defined PREV_LIBPATH set LIBPATH=%PREV_LIBPATH%
 echo done.
