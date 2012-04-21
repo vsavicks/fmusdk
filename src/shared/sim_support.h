@@ -41,6 +41,7 @@
 #define DLL_DIR2   "binaries/linux64/"
 #endif /*__x86_64*/
 #define DLL_SUFFIX ".so"
+#define DLL_SUFFIX2 ".so"
 #endif /*__APPLE__*/
 #endif /*WINDOWS*/
 
