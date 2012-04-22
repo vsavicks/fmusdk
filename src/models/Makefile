@@ -33,12 +33,14 @@ all:
 	./build_fmu cs values
 	./build_fmu cs vanDerPol
 
+# CBITSFLAGS is set to -m32 to build linux32 fmus
+
 %.o: %.c
 	echo `pwd`
-	$(CC) -g -c $(PIC) -Wall $(CSORME_INCLUDE) $(CFLAGS) $< -o $@
+	$(CC) -g -c $(CBITSFLAGS) $(PIC) -Wall $(CSORME_INCLUDE) $(CFLAGS) $< -o $@
 
 %.so: %.o
-	$(CC) -shared -Wl,-soname,$@ -o $@ $<
+	$(CC) $(CBITSFLAGS) -shared -Wl,-soname,$@ -o $@ $<
 
 %.dylib: %.o
 	$(CC) -dynamiclib -o $@ $<
@@ -65,6 +67,4 @@ clean:
 	(cd vanDerPol; make dirclean)
 
 dirclean:
-	rm -f *.so *.dylib *.o *.fmu
-	rm -f *~
-	rm -rf fmu
+	rm -rf *.so *.dylib *.o *.fmu *~ fmu
