@@ -33,7 +33,7 @@ int unzip(const char *zipPath, const char *outPath) {
     int code;
     char cwd[BUFSIZE];
     char binPath[BUFSIZE];
-    int n = strlen(UNZIP_CMD) + strlen(outPath) + 1 +  strlen(zipPath) + 9;
+    int n = strlen(UNZIP_CMD_WIN) + strlen(outPath) + 1 +  strlen(zipPath) + 9;
     char* cmd = (char*)calloc(sizeof(char), n);
 
     // remember current directory
@@ -61,7 +61,7 @@ int unzip(const char *zipPath, const char *outPath) {
    
     // run the unzip command
     // remove "> NUL" to see the unzip protocol
-    sprintf(cmd, "%s%s \"%s\" > NUL", UNZIP_CMD, outPath, zipPath); 
+    sprintf(cmd, "%s%s \"%s\" > NUL", UNZIP_CMD_WIN, outPath, zipPath); 
     // printf("cmd='%s'\n", cmd);
     code = system(cmd);
     free(cmd);
@@ -97,9 +97,9 @@ int unzip(const char *zipPath, const char *outPath) {
     }
         
     // run the unzip command
-    n = strlen(UNZIP_CMD) + strlen(outPath) + 1 +  strlen(zipPath) + 16;
+    n = strlen(UNZIP_CMD) + 1 + strlen(outPath) + 4 +  strlen(zipPath) + 16;
     cmd = (char*)calloc(sizeof(char), n);
-    sprintf(cmd, "%s%s \"%s\" > /dev/null", UNZIP_CMD, outPath, zipPath); 
+    sprintf(cmd, "%s %s -d \"%s\" > /dev/null", UNZIP_CMD, zipPath, outPath); 
     printf("cmd='%s'\n", cmd);
     code = system(cmd);
     free(cmd);

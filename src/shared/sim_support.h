@@ -8,7 +8,11 @@
 // -x   Extracts files from an archive with their full paths in the current dir, or in an output dir if specified
 // -aoa Overwrite All existing files without prompt
 // -o   Specifies a destination directory where files are to be extracted
-#define UNZIP_CMD "7z x -aoa -o"
+#if WINDOWS
+#define UNZIP_CMD_WIN "7z x -aoa -o"
+#else
+#define UNZIP_CMD "unzip"
+#endif /*WINDOWS*/
 
 #define XML_FILE  "modelDescription.xml"
 
