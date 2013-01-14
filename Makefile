@@ -9,3 +9,6 @@ distclean: clean
 	rm -rf fmu
 	find . -name "*~" -exec rm {} \;
 	find . -name "#*~" -exec rm {} \;
+
+test:
+	(./fmusim cs fmu/cs/values.fmu 5 0.1 0 s)
