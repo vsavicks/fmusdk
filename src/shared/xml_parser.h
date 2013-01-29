@@ -136,7 +136,8 @@ typedef struct {
     Elm type;
     const char** attributes;
     int n;
-    Connection* connection;     // connection to which the port is connected
+    Connection* connection;     // reference to linked Connection
+    void* variable;             // reference to ScalarVariable
 } Port;
 
 // AST node for element Component
@@ -146,7 +147,7 @@ typedef struct {
     int n;
     Port** inputs;              // list of input ports
     Port** outputs;             // list of output ports
-    void* fmu;                  // component's fmu
+    void* fmu;                  // reference to FMU
 } Component;
 
 // AST node for element Graph
