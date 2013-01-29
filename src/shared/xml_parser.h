@@ -21,13 +21,13 @@ typedef unsigned int fmiValueReference;
 #endif
 #define fmiUndefinedValueReference (fmiValueReference)(-1)
 
-#define SIZEOF_ELM 31
+#define SIZEOF_ELM 39
 extern const char *elmNames[SIZEOF_ELM];
 
-#define SIZEOF_ATT 47
+#define SIZEOF_ATT 49
 extern const char *attNames[SIZEOF_ATT];
 
-#define SIZEOF_ENU 13
+#define SIZEOF_ENU 17
 extern const char *enuNames[SIZEOF_ENU];
 
 // Elements
@@ -36,7 +36,10 @@ typedef enum {
     elm_Type,elm_RealType,elm_IntegerType,elm_BooleanType,elm_StringType,elm_EnumerationType,elm_Item,
     elm_DefaultExperiment,elm_VendorAnnotations,elm_Tool,elm_Annotation,elm_ModelVariables,elm_ScalarVariable,
     elm_DirectDependency,elm_Name,elm_Real,elm_Integer,elm_Boolean,elm_String,elm_Enumeration,
-    elm_Implementation,elm_CoSimulation_StandAlone,elm_CoSimulation_Tool,elm_Model,elm_File,elm_Capabilities
+    elm_Implementation,elm_CoSimulation_StandAlone,elm_CoSimulation_Tool,elm_Model,elm_File,elm_Capabilities,
+
+    // component graph
+    elm_Graph,elm_Components,elm_Component,elm_Inputs,elm_Outputs,elm_Port,elm_Connections,elm_Connection
 } Elm;
 
 // Attributes
@@ -48,13 +51,19 @@ typedef enum {
   att_numberOfEventIndicators,att_input,
   att_canHandleVariableCommunicationStepSize,att_canHandleEvents,att_canRejectSteps,att_canInterpolateInputs,
   att_maxOutputDerivativeOrder,att_canRunAsynchronuously,att_canSignalEvents,att_canBeInstantiatedOnlyOncePerProcess,
-  att_canNotUseMemoryManagementFunctions,att_entryPoint,att_manualStart,att_type
+  att_canNotUseMemoryManagementFunctions,att_file,att_entryPoint,att_manualStart,att_type,
+
+  // component graph
+  att_connection,att_fmuPath
 } Att;
 
 // Enumeration values
 typedef enum {
     enu_flat,enu_structured,enu_constant,enu_parameter,enu_discrete,enu_continuous,
-    enu_input,enu_output,enu_internal,enu_none,enu_noAlias,enu_alias,enu_negatedAlias    
+    enu_input,enu_output,enu_internal,enu_none,enu_noAlias,enu_alias,enu_negatedAlias,
+	
+    // component graph
+    enu_Boolean,enu_Integer,enu_Real,enu_String    
 } Enu;
 
 // AST node for element 
@@ -114,6 +123,41 @@ typedef struct {
     CoSimulation* cosimulation;       // NULL if this ModelDescription is for model exchange only
 } ModelDescription;
 
+// AST node for element Connection
+typedef struct {
+    Elm type;
+    const char** attributes;
+    int n;
+    void* value;                // connection's current value
+} Connection;
+
+// AST node for element Port
+typedef struct {
+    Elm type;
+    const char** attributes;
+    int n;
+    Connection* connection;     // connection to which the port is connected
+} Port;
+
+// AST node for element Component
+typedef struct {
+    Elm type;
+    const char** attributes;
+    int n;
+    Port** inputs;              // list of input ports
+    Port** outputs;             // list of output ports
+    void* fmu;                  // component's fmu
+} Component;
+
+// AST node for element Graph
+typedef struct {
+    Elm type;                   // element type
+    const char** attributes;    // null or n attribute value strings
+    int n;                      // size of attributes, even number
+    Component** components;     // list of Components
+    Connection** connections;   // list of Connections
+} Graph;
+
 // types of AST nodes used to represent an element
 typedef enum { 
     astElement, 
@@ -121,7 +165,13 @@ typedef enum {
     astType,
     astScalarVariable,
     astCoSimulation,
-    astModelDescription
+    astModelDescription,
+
+    // component graph
+    astComponent,
+    astPort,
+    astConnection,
+    astGraph
 } AstNodeType;
 
 // Possible results when retrieving an attribute value from an element
@@ -133,6 +183,7 @@ typedef enum {
 
 // Public methods: Parsing and low-level AST access
 ModelDescription* parse(const char* xmlPath);
+Graph* parseGraph(const char* xmlPath);
 const char* getString(void* element, Att a);
 double getDouble     (void* element, Att a, ValueStatus* vs);
 int getInt           (void* element, Att a, ValueStatus* vs);

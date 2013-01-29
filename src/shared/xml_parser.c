@@ -28,7 +28,10 @@ const char *elmNames[SIZEOF_ELM] = {
     "Type","RealType","IntegerType","BooleanType","StringType","EnumerationType","Item",
      "DefaultExperiment","VendorAnnotations","Tool","Annotation", "ModelVariables","ScalarVariable",
      "DirectDependency","Name","Real","Integer","Boolean","String","Enumeration",
-     "Implementation","CoSimulation_StandAlone","CoSimulation_Tool","Model","File","Capabilities"
+     "Implementation","CoSimulation_StandAlone","CoSimulation_Tool","Model","File","Capabilities",
+
+    // component graph
+    "Graph","Components","Component","Inputs","Outputs","Port","Connections","Connection"
 };
 
 const char *attNames[SIZEOF_ATT] = {
@@ -39,12 +42,18 @@ const char *attNames[SIZEOF_ATT] = {
     "numberOfEventIndicators","input",
     "canHandleVariableCommunicationStepSize","canHandleEvents","canRejectSteps","canInterpolateInputs",
     "maxOutputDerivativeOrder","canRunAsynchronuously","canSignalEvents","canBeInstantiatedOnlyOncePerProcess",
-    "canNotUseMemoryManagementFunctions","file","entryPoint","manualStart","type"
+    "canNotUseMemoryManagementFunctions","file","entryPoint","manualStart","type",
+
+    // component graph
+    "connection","fmuPath"
 };
 
 const char *enuNames[SIZEOF_ENU] = {
     "flat","structured","constant","parameter","discrete","continuous",
-    "input","output", "internal","none","noAlias","alias","negatedAlias"
+    "input","output", "internal","none","noAlias","alias","negatedAlias",
+
+    // component graph
+    "Boolean","Integer","Real","String"
 };
 
 #define ANY_TYPE -1
@@ -381,6 +390,22 @@ AstNodeType getAstNodeType(Elm e){
     case elm_DirectDependency:
     case elm_Model:
         return astListElement;
+	
+    // component graph
+    //////////////////
+    case elm_Graph:
+        return astGraph;
+    case elm_Component:
+        return astComponent;
+    case elm_Connection:
+        return astConnection;
+    case elm_Port:
+        return astPort;
+    case elm_Components:
+    case elm_Inputs:
+    case elm_Outputs:
+    case elm_Connections:
+        return astListElement;
     default:
         return astElement; 
     }
@@ -440,7 +465,14 @@ static void XMLCALL startElement(void *context, const char *elm, const char **at
         case astScalarVariable:   size = sizeof(ScalarVariable); break;
         case astCoSimulation:     size = sizeof(CoSimulation); break;
         case astModelDescription: size = sizeof(ModelDescription); break;
-		default: assert(0);
+
+        // component graph
+        //////////////////
+        case astComponent:      size = sizeof(Component); break;
+        case astConnection:     size = sizeof(Connection); break;
+        case astPort:           size = sizeof(Port); break;
+        case astGraph:          size = sizeof(Graph); break;
+	default: assert(0);
     }
     e = newElement(el, size, attr);
     checkPointer(e); 
@@ -638,6 +670,86 @@ static void XMLCALL endElement(void *context, const char *elm) {
                  stackPush(stack, name);
                  break;
             }
+
+        // component graph
+        //////////////////
+        case elm_Graph: 
+            {
+                 Graph*     graph;
+                 Component** comps = NULL;      // list of Components
+                 Connection** conns = NULL;     // list of Connections
+                 ListElement* child;
+				
+                 child = checkPop(ANY_TYPE);
+                 if (child->type == elm_Connections){
+                     conns = (Connection**)child->list;
+                     free(child);
+                     child = checkPop(ANY_TYPE);
+                     if (!child) return;
+                 }
+                 if (child->type == elm_Components){
+                     comps = (Component**)child->list;
+                     free(child);
+                     child = checkPop(ANY_TYPE);
+                     if (!child) return;
+                 }
+                 if (!checkElementType(child, elm_Graph)) return;
+                 graph = (Graph*)child;
+                 graph->components = comps;
+                 graph->connections = conns;
+                 stackPush(stack, graph);
+                 break;
+            }
+        case elm_Component:
+            {
+                 Component*     component;
+                 Port**         ins = NULL;
+                 Port**         outs = NULL;
+                 ListElement*   child;
+
+                 child = checkPop(ANY_TYPE);
+                 if (!child) return;
+                 if (child->type == elm_Outputs){
+                     outs = (Port**)child->list;
+                     free(child);
+                     child = checkPop(ANY_TYPE);
+                     if (!child) return;
+                 }
+                 if (child->type == elm_Inputs){
+                     ins = (Port**)child->list;
+                     free(child);
+                     child = checkPop(ANY_TYPE);
+                     if (!child) return;
+                 }
+                 if (!checkElementType(child, elm_Component)) return;
+                 component = (Component*)child;
+                 component->inputs = ins;
+                 component->outputs = outs;
+                 component->fmu = NULL;
+                 stackPush(stack, component);
+                 break;
+            }
+        case elm_Components:        popList(elm_Component); break;
+        case elm_Inputs:            popList(elm_Port); break;
+        case elm_Outputs:           popList(elm_Port); break;
+        case elm_Connections:       popList(elm_Connection); break;
+        case elm_Connection:
+            {
+                Connection* con = checkPop(elm_Connection);
+                if (!con) return;
+                con->value = NULL;
+                stackPush(stack, con);
+                break;
+            }
+        case elm_Port:
+            {
+                Port* port = checkPop(elm_Port);
+                if (!port) return;
+                port->connection = NULL;
+                stackPush(stack, port);
+                break;
+            }
+
         case -1: return; // illegal element error
         default: // must be a leaf Element
                  assert(getAstNodeType(el)==astElement);
@@ -724,6 +836,28 @@ void printElement(int indent, void* element){
             printElement(indent, md->cosimulation);
             break;
         }
+
+        // component diagram:
+        case astComponent: {
+            Component* c = (Component*)e;
+            printList(indent, (void**)c->inputs);
+            printList(indent, (void**)c->outputs);
+            break;
+        }
+        case astConnection: {
+            //TODO
+            break;
+        }
+        case astPort: {
+            //TODO
+            break;
+        }
+        case astGraph: {
+            Graph *g = (Graph*)e;
+            printList(indent, (void**)g->components);
+	    printList(indent, (void**)g->connections);
+            break;
+        }
     }
 }
 
@@ -778,6 +912,28 @@ void freeElement(void* element){
             freeElement(md->cosimulation);
             break;
        }
+
+        // component diagram:
+        case astComponent: {
+            Component* nd = (Component*)e;
+            freeList((void*)nd->inputs);
+            freeList((void*)nd->outputs);
+            break;
+        }
+        case astConnection: {
+            free(((Connection*)e)->value);
+            break;
+        }
+        case astPort: {
+            //TODO
+            break;
+        }
+        case astGraph: {
+            Graph* g = (Graph*)e;
+            freeList((void*)g->components);
+            freeList((void*)g->connections);
+            break;
+       }
     }
     // free the struct
     free(e);
@@ -812,6 +968,30 @@ ModelDescription* validate(ModelDescription* md) {
         return NULL;
     }
     return md;
+}
+
+
+// ------------------------------------------------------------------------- 
+// Validation - done after parsing to report all errors 
+
+Graph* validateGraph(Graph* g) {
+/*    int error = 0;
+    int i;
+    if (md->modelVariables)
+    for (i=0; md->modelVariables[i]; i++){
+        ScalarVariable* sv = (ScalarVariable*)md->modelVariables[i];
+        const char* declaredType = getString(sv->typeSpec, att_declaredType);
+        Type* decltype = getDeclaredType(md, declaredType);
+        if (declaredType && decltype==NULL) {
+            printf("Warning: Declared type %s of variable %s not found in modelDescription.xml\n", declaredType, getName(sv));
+            error++;
+        }
+    }
+    if (error) {
+        printf("Error: Found %d error in modelDescription.xml\n", error);
+        return NULL;
+    }*/
+    return g;
 }
 
 // ------------------------------------------------------------------------- 
@@ -863,6 +1043,43 @@ ModelDescription* parse(const char* xmlPath) {
     cleanup(file);
     //printElement(1, md); // debug
     return validate(md); // success if all refs are valid    
+}
+
+Graph* parseGraph(const char* xmlPath) {
+    Graph* g = NULL;
+    FILE *file;
+    int done = 0;
+    stack = stackNew(100, 10);
+    if (!checkPointer(stack)) return NULL;  // failure
+    parser = XML_ParserCreate(NULL);
+    if (!checkPointer(parser)) return NULL;  // failure
+    XML_SetElementHandler(parser, startElement, endElement);
+    XML_SetCharacterDataHandler(parser, handleData);
+  	file = fopen(xmlPath, "rb");
+	if (file == NULL) {
+        printf("Cannot open file '%s'\n", xmlPath);
+     	XML_ParserFree(parser);
+        return NULL; // failure
+    }
+    while (!done) {
+        int n = fread(text, sizeof(char), XMLBUFSIZE, file);
+	    if (n != XMLBUFSIZE) done = 1;
+        if (!XML_Parse(parser, text, n, done)){
+             printf("Parse error in file %s at line %d:\n%s\n", 
+                     xmlPath,
+                     (int)XML_GetCurrentLineNumber(parser),
+                     XML_ErrorString(XML_GetErrorCode(parser)));
+             while (! stackIsEmpty(stack)) g = stackPop(stack);
+             if (g) freeElement(g);
+             cleanup(file);
+             return NULL; // failure
+        }
+    }
+    g = stackPop(stack);
+    assert(stackIsEmpty(stack));
+    cleanup(file);
+    //printElement(1, md); // debug
+    return validateGraph(g); // success if all refs are valid    
 }
 
 
