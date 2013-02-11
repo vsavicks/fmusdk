@@ -53,14 +53,14 @@ static fmiStatus setString(fmiComponent comp, fmiValueReference vr, fmiString va
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
 static void setStartValues(ModelInstance *comp) {
-    r(x_) = 1;
-    i(int_in_) = 2;
-    i(int_out_) = 0;
-    b(bool_in_) = fmiTrue;
-    b(bool_out_) = fmiFalse;
-    copy(string_in_, "a string");
+    comp->r[x_] = 1;
+    comp->i[int_in_] = 2;
+    comp->i[int_out_] = 0;
+    comp->b[bool_in_] = fmiTrue;
+    comp->b[bool_out_] = fmiFalse;
+    setString(comp, string_in_, "a string");
   printf("values.c setStartValues 90\n");
-    copy(string_out_, month[0]);
+    setString(comp, string_out_, month[0]);
   printf("values.c setStartValues end\n");
 }
 
@@ -74,8 +74,8 @@ static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
 // called by fmiGetReal, fmiGetContinuousStates and fmiGetDerivatives
 static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
     switch (vr) {
-        case x_     : return   r(x_);
-        case der_x_ : return - r(x_);
+        case x_     : return   comp->r[x_];
+        case der_x_ : return - comp->r[x_];
         default: return 0;
     }
 }
@@ -84,9 +84,9 @@ static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
 static void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
     eventInfo->upcomingTimeEvent   = fmiTrue;
     eventInfo->nextEventTime       = 1 + comp->time;
-    i(int_out_) += 1;
-    b(bool_out_) = !b(bool_out_);
-    if (i(int_out_)<12) copy(string_out_, month[i(int_out_)]);
+    comp->i[int_out_] += 1;
+    comp->b[bool_out_] = !comp->b[bool_out_];
+    if (comp->i[int_out_]<12) setString(comp, string_out_, month[comp->i[int_out_]]);
     else eventInfo->terminateSimulation = fmiTrue;
 } 
 

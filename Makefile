@@ -11,4 +11,4 @@ distclean: clean
 	find . -name "#*~" -exec rm {} \;
 
 test:
-	(./fmusim cs fmu/cs/values.fmu 5 0.1 0 s)
+	(./fmusim cs componentGraphWt.xml 30 0.1 0 s)

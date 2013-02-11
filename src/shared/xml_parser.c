@@ -972,26 +972,95 @@ ModelDescription* validate(ModelDescription* md) {
 
 
 // ------------------------------------------------------------------------- 
-// Validation - done after parsing to report all errors 
+// Graph validation - done after parsing to report all errors
 
-Graph* validateGraph(Graph* g) {
-/*    int error = 0;
+
+static Connection* getConnectionByName(Graph* graph, const char* connectionName){
     int i;
-    if (md->modelVariables)
-    for (i=0; md->modelVariables[i]; i++){
-        ScalarVariable* sv = (ScalarVariable*)md->modelVariables[i];
-        const char* declaredType = getString(sv->typeSpec, att_declaredType);
-        Type* decltype = getDeclaredType(md, declaredType);
-        if (declaredType && decltype==NULL) {
-            printf("Warning: Declared type %s of variable %s not found in modelDescription.xml\n", declaredType, getName(sv));
-            error++;
+    if (connectionName && graph->connections)
+    for (i=0; graph->connections[i]; i++){
+        Connection* con = graph->connections[i];
+        if (!strcmp(connectionName, getName(con))) return con;
+    }
+    return NULL;
+}
+
+// returns one of: real, integer, boolean, string, none
+static Enu getPortType(void* port) {
+    ValueStatus vs;
+    return getEnumValue(port, att_type, &vs);
+}
+
+// validates port's connection attribute for declared connection
+// assigns connection to a port if valid, otherwise increases the error count
+static void validatePortConnection(Graph* graph, Port* port, int* error) {
+    const char* conName = getString(port, att_connection);  //TODO: add null-validation
+    Connection* con = getConnectionByName(graph, conName);
+    if (conName && con==NULL) {
+        printf("Warning: Declared connection %s of linked port %s not found in connection diagram file\n", conName, getName(port));
+        (*error)++;
+    } else if (con) {
+        // check port type
+        // allocate type variable
+        if (!con->value) {
+            void* value = NULL;
+            Enu type = getPortType(port);
+            switch (type) {
+                case enu_Real:
+                    value = calloc(1, sizeof(fmiReal));
+                    break;
+                case enu_Integer:
+                    value = calloc(1, sizeof(fmiInteger));
+                    break;
+                case enu_Boolean:
+                    value = calloc(1, sizeof(fmiBoolean));
+                    break;
+                case enu_String:
+                    value = calloc(1, sizeof(fmiString));
+                    break;
+                default:
+                    printf("Warning: Declared port %s has illegal type %s\n", getName(port), getString(port, att_type));
+                    (*error)++;
+            }
+            if (value) {
+                con->value = value;
+            } else if (type != -1) {
+                printf("Error: Value allocation failed for port %s\n", getName(port));
+                (*error)++;
+            }
+        }
+        port->connection = con;
+    }
+}
+
+// validates the graph for valid port connections
+//TODO: add more validation i.e. missing attributes, port types etc.
+Graph* validateGraph(Graph* graph) {
+    int error = 0;
+    int i,n;
+    Port** ports;
+
+    for (i=0; graph->components[i]; i++) {
+        // check output ports' connections
+        ports = graph->components[i]->outputs;
+        if (ports) {
+            for (n=0; ports[n]; n++) {
+                validatePortConnection(graph, ports[n], &error);
+            }
+        }
+        // check input ports' connections
+        ports = graph->components[i]->inputs;
+        if (ports) {
+            for (n=0; ports[n]; n++) {
+                validatePortConnection(graph, ports[n], &error);
+            }
         }
     }
     if (error) {
-        printf("Error: Found %d error in modelDescription.xml\n", error);
+        printf("Error: Found %d error(s) in component diagram file\n", error);
         return NULL;
-    }*/
-    return g;
+    }
+    return graph;
 }
 
 // ------------------------------------------------------------------------- 

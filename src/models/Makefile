@@ -32,6 +32,9 @@ all:
 	./build_fmu cs inc
 	./build_fmu cs values
 	./build_fmu cs vanDerPol
+	./build_fmu cs waterTank
+	./build_fmu cs waterTankCtr
+	./build_fmu cs waterTankEnv
 
 # CBITSFLAGS is set to -m32 to build linux32 fmus
 
@@ -65,6 +68,9 @@ clean:
 	(cd inc; make dirclean)
 	(cd values; make dirclean)
 	(cd vanDerPol; make dirclean)
+	(cd waterTank; make dirclean)
+	(cd waterTankCtr; make dirclean)
+	(cd waterTankEnv; make dirclean)
 
 dirclean:
 	rm -rf *.so *.dylib *.o *.fmu *~ fmu

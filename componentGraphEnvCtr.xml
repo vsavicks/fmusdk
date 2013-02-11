@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<Graph
+  fmiVersion="1.0">
+
+  <Components>
+    <Component  modelName="waterTankEnv" fmuPath="fmu/cs/waterTankEnv.fmu">
+        <Inputs>
+            <Port name="pump" type="Boolean" connection="c1"/>
+        </Inputs>
+        <Outputs>
+            <Port name = "level" type="Real" connection="c2"/>
+        </Outputs>
+    </Component>
+    <Component  modelName="waterTankCtr" fmuPath="fmu/cs/waterTankCtr.fmu">
+        <Inputs>
+            <Port name="level" type="Real" connection="c2"/>
+        </Inputs>
+        <Outputs>
+            <Port name = "pump" type="Boolean" connection="c1"/>
+        </Outputs>
+    </Component>
+  </Components>
+
+  <Connections>
+    <Connection name="c1"/>
+    <Connection name="c2"/>
+  </Connections>
+</Graph>

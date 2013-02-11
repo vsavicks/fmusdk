@@ -33,17 +33,56 @@
 #include "fmi_cs.h"
 #include "sim_support.h"
 
-FMU fmu; // the fmu to simulate
+static Graph* loadGraph(const char* graphFileName) {
+    Graph* graph;           // component graph
+    Component** comps;      // list of components
+    Port** ports;           // list of ports (input/output)
+    int i,n;                // helpers
+
+    // parse component graph xml
+    graph = parseGraph(graphFileName);
+    if (!graph) exit(EXIT_FAILURE);
+
+    // load fmu and set ports
+    comps = graph->components;
+    for (i=0; comps[i]; i++) {
+        FMU* fmu = (FMU*)calloc(1, sizeof(FMU));
+        if (!fmu) return NULL; //TODO add proper error handling
+        char* fmuFileName = getString(comps[i], att_fmuPath);
+        loadFMU(fmu, fmuFileName);
+
+        // input ports
+        if (comps[i]->inputs) {
+            ports = comps[i]->inputs;
+            for (n=0; ports[n]; n++) {
+                ports[n]->variable = getVariableByName(fmu->modelDescription, getName(ports[n]));
+            }
+        }
+
+        // output ports
+        if (comps[i]->outputs) {
+            ports = comps[i]->outputs;
+            for (n=0; ports[n]; n++) {
+                ports[n]->variable = getVariableByName(fmu->modelDescription, getName(ports[n]));
+
+            }
+        }
+
+        comps[i]->fmu = (void*)fmu;
+    }
+
+    return graph;
+}
 
 // simulate the given FMU using the forward euler method.
 // time events are processed by reducing step size to exactly hit tNext.
 // state events are checked and fired only at the end of an Euler step. 
 // the simulator may therefore miss state events and fires state events typically too late.
-static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char separator) {
+static int simulate(Graph* graph, double tEnd, double h, fmiBoolean loggingOn, char separator) {
     double time;
     double tStart = 0;               // start time
     const char* guid;                // global unique id of the fmu
-    fmiComponent c;                  // instance of the fmu 
+    fmiComponent c;                  // instance of the fmu
     fmiStatus fmiFlag;               // return code of the fmu functions
     const char* fmuLocation = NULL;  // path to the fmu as URL, "file://C:\QTronic\sales"
     const char* mimeType = "application/x-fmu-sharedlibrary"; // denotes tool in case of tool coupling
@@ -52,19 +91,29 @@ static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char 
     fmiBoolean interactive = fmiFalse; // simulation run without user interaction
     fmiCallbackFunctions callbacks;  // called by the model during simulation
     ModelDescription* md;            // handle to the parsed XML file   
+    FMU* fmu;                        // handle to fmu
     int nSteps = 0;
     FILE* file;
-        
-    // instantiate the fmu 
-    md = fmu->modelDescription;
-    guid = getString(md, att_guid);
+    int i,n;
+    Port** ports;
+
+    // set callback functions
     callbacks.logger = fmuLogger;
     callbacks.allocateMemory = calloc;
     callbacks.freeMemory = free;
     callbacks.stepFinished = NULL; // fmiDoStep has to be carried out synchronously
-    c = fmu->instantiateSlave(getModelIdentifier(md), guid, fmuLocation, mimeType, 
+
+    // instantiate slaves
+    for (i=0; graph->components[i]; i++) {
+        fmu = (FMU*) graph->components[i]->fmu;
+        md = fmu->modelDescription;
+        guid = getString(md, att_guid);
+        c = fmu->instantiateSlave(getModelIdentifier(md), guid, fmuLocation, mimeType, 
                               timeout, visible, interactive, callbacks, loggingOn);
-    if (!c) return error("could not instantiate model");
+        if (!c) return error("could not instantiate model");
+        graph->components[i]->instance = c;
+        c = NULL;
+    }
 
     // open result file
     if (!(file=fopen(RESULT_FILE, "w"))) {
@@ -73,27 +122,100 @@ static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char 
         return 0; // failure
     }
     
+    // initialise slaves
     // StopTimeDefined=fmiFalse means: ignore value of tEnd
-    fmiFlag = fmu->initializeSlave(c, tStart, fmiTrue, tEnd);
-    if (fmiFlag > fmiWarning)  return error("could not initialize model");
-    
-    // output solution for time t0
-    outputRow(fmu, c, tStart, file, separator, TRUE);  // output column names
-    outputRow(fmu, c, tStart, file, separator, FALSE); // output values
+    for (i=0; graph->components[i]; i++) {
+        fmu = (FMU*) graph->components[i]->fmu;
+        c = graph->components[i]->instance;
+        fmiFlag = fmu->initializeSlave(c, tStart, fmiTrue, tEnd);
+        if (fmiFlag > fmiWarning)  return error("could not initialize model");
+    }
 
-    // enter the simulation loop    
+    // output solution for time t0
+    outputRow(graph, tStart, file, separator, TRUE);  // output column names
+    outputRow(graph, tStart, file, separator, FALSE); // output values
+
+    // enter the simulation loop
     time = tStart;
     while (time < tEnd) {
-        fmiFlag = fmu->doStep(c, time, h, fmiTrue);
-        if (fmiFlag != fmiOK)  return error("could not complete simulation of the model");
+        // read outputs
+        for (i=0; graph->components[i]; i++) {
+            fmu = (FMU*) graph->components[i]->fmu;
+            c = graph->components[i]->instance;
+            ports = graph->components[i]->outputs;
+            if (!ports) continue;
+
+            for (n=0; ports[n]; n++) {
+                ScalarVariable* sv = ports[n]->variable;
+                fmiValueReference vr = getValueReference(sv);
+                void* value = ports[n]->connection->value;
+                switch (sv->typeSpec->type) {
+                    case elm_Real:
+                        fmu->getReal(c, &vr, 1, (fmiReal*) value);
+                        break;
+                    case elm_Integer:
+                        fmu->getInteger(c, &vr, 1, (fmiInteger*) value);
+                        break;
+                    case elm_Boolean:
+                        fmu->getBoolean(c, &vr, 1, (fmiBoolean*) value);
+                        break;
+                    case elm_String:
+                        fmu->getString(c, &vr, 1, (fmiString*) value);
+                        break;
+                }
+            }
+        }
+
+        // set inputs
+        for (i=0; graph->components[i]; i++) {
+            fmu = (FMU*) graph->components[i]->fmu;
+            c = graph->components[i]->instance;
+            ports = graph->components[i]->inputs;
+            if (!ports) continue;
+
+            for (n=0; ports[n]; n++) {
+                ScalarVariable* sv = ports[n]->variable;
+                fmiValueReference vr = getValueReference(sv);
+                void* value = ports[n]->connection->value;
+                switch (sv->typeSpec->type) {
+                    case elm_Real:
+                        fmu->setReal(c, &vr, 1, (fmiReal*) value);
+                        break;
+                    case elm_Integer:
+                        fmu->setInteger(c, &vr, 1, (fmiInteger*) value);
+                        break;
+                    case elm_Boolean:
+                        fmu->setBoolean(c, &vr, 1, (fmiBoolean*) value);
+                        break;
+                    case elm_String:
+                        fmu->setString(c, &vr, 1, (fmiString*) value);
+                        break;
+                }
+            }
+        }
+    
+        for (i=0; graph->components[i]; i++) {
+            fmu = (FMU*) graph->components[i]->fmu;
+            c = graph->components[i]->instance;
+
+            // do simulation step
+            fmiFlag = fmu->doStep(c, time, h, fmiTrue);
+            if (fmiFlag != fmiOK)  return error("could not complete simulation of the model");
+        }
+
+        // increment master time
         time += h;
-        outputRow(fmu, c, time, file, separator, FALSE); // output values for this step
+        outputRow(graph, time, file, separator, FALSE); // output values for this step
         nSteps++;
     }
     
     // end simulation
-    fmiFlag = fmu->terminateSlave(c);
-    fmu->freeSlaveInstance(c);
+    for (i=0; graph->components[i]; i++) {
+        fmu = (FMU*)graph->components[i]->fmu;
+        c = graph->components[i]->instance;
+        fmiFlag = fmu->terminateSlave(c);
+        fmu->freeSlaveInstance(c);
+    }
   
     // print simulation summary 
     printf("Simulation from %g to %g terminated successful\n", tStart, tEnd);
@@ -103,29 +225,36 @@ static int simulate(FMU* fmu, double tEnd, double h, fmiBoolean loggingOn, char 
 }
 
 int main(int argc, char *argv[]) {
-    char* fmuFileName;
+    Graph* graph;
+    char* graphFileName;
     
     // parse command line arguments and load the FMU
     double tEnd = 1.0;
     double h=0.1;
     int loggingOn = 0;
     char csv_separator = ';';
-    parseArguments(argc, argv, &fmuFileName, &tEnd, &h, &loggingOn, &csv_separator);
-    loadFMU(fmuFileName);
+    parseArguments(argc, argv, &graphFileName, &tEnd, &h, &loggingOn, &csv_separator);
+    graph = loadGraph(graphFileName);
 
     // run the simulation
-    printf("FMU Simulator: run '%s' from t=0..%g with step size h=%g, loggingOn=%d, csv separator='%c'\n", 
-            fmuFileName, tEnd, h, loggingOn, csv_separator);
-    simulate(&fmu, tEnd, h, loggingOn, csv_separator);
+    printf("FMU Simulator: run configuration '%s' from t=0..%g with step size h=%g, loggingOn=%d, csv separator='%c'\n", 
+            graphFileName, tEnd, h, loggingOn, csv_separator);
+    simulate(graph, tEnd, h, loggingOn, csv_separator);
     printf("CSV file '%s' written\n", RESULT_FILE);
 
     // release FMU 
+    int i;
+    Component** comps = graph->components;
+    for (i=0; comps[i]; i++) {
 #ifdef _MSC_VER
-    FreeLibrary(fmu.dllHandle);
+        FreeLibrary(((FMU*)comps[i]->fmu)->dllHandle);
 #else
-    dlclose(fmu.dllHandle);
+        dlclose(((FMU*)comps[i]->fmu)->dllHandle);
 #endif
-    freeElement(fmu.modelDescription);
+        freeElement(((FMU*)comps[i]->fmu)->modelDescription);
+        free(comps[i]->fmu);
+    }
+    freeElement(graph);
     return EXIT_SUCCESS;
 }
 

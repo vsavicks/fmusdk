@@ -17,6 +17,11 @@
 #ifndef fmiModelTypes_h
 #ifndef fmiPlatformTypes_h
 typedef unsigned int fmiValueReference;
+typedef void*        fmiComponent;
+typedef double       fmiReal;
+typedef int          fmiInteger;
+typedef char         fmiBoolean;
+typedef const char*  fmiString;
 #endif
 #endif
 #define fmiUndefinedValueReference (fmiValueReference)(-1)
@@ -147,7 +152,8 @@ typedef struct {
     int n;
     Port** inputs;              // list of input ports
     Port** outputs;             // list of output ports
-    void* fmu;                  // reference to FMU
+    void* fmu;                  // reference to FMU structure
+    fmiComponent instance;      // instance of the fmu (after call to fmiInstantiateSlave)
 } Component;
 
 // AST node for element Graph

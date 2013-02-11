@@ -497,11 +497,11 @@ fmiStatus fmiDoStep(fmiComponent c, fmiReal currentCommunicationPoint,
 
 #if NUMBER_OF_REALS>0
         for (i=0; i<NUMBER_OF_STATES; i++) {
-            prevState[i] = r(vrStates[i]);
+            prevState[i] = comp->r[vrStates[i]];
         }
         for (i=0; i<NUMBER_OF_STATES; i++) {
             fmiValueReference vr = vrStates[i];
-            r(vr) += h * getReal(comp, vr+1); // forward Euler step
+            comp->r[vr] += h * getReal(comp, vr+1); // forward Euler step
         }
 #endif        
 

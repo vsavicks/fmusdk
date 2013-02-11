@@ -14,14 +14,6 @@
 #include "fmiModelFunctions.h"
 #endif
 
-// macros used to define variables
-#define  r(vr) comp->r[vr]
-#define  i(vr) comp->i[vr]
-#define  b(vr) comp->b[vr]
-#define  s(vr) comp->s[vr]
-#define pos(z) comp->isPositive[z]
-#define copy(vr, value) setString(comp, vr, value)
-
 #define not_modelError (modelInstantiated|modelInitialized|modelTerminated)
 
 typedef enum {

@@ -44,8 +44,8 @@
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
 static void setStartValues(ModelInstance *comp) {
-    r(x_) = 1;
-    r(k_) = 1;
+    comp->r[x_] = 1;
+    comp->r[k_] = 1;
 }
 
 // called by fmiInitialize() after setting eventInfo to defaults
@@ -56,9 +56,9 @@ static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
 // called by fmiGetReal, fmiGetContinuousStates and fmiGetDerivatives
 static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
     switch (vr) {
-        case x_     : return r(x_);
-        case der_x_ : return - r(k_) * r(x_);
-        case k_     : return r(k_);
+        case x_     : return comp->r[x_];
+        case der_x_ : return - comp->r[k_] * comp->r[x_];
+        case k_     : return comp->r[k_];
         default: return 0;
     }
 }

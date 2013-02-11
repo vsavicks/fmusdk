@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<Graph
+  fmiVersion="1.0">
+
+  <Components>
+    <Component  modelName="waterTank" fmuPath="fmu/cs/waterTank.fmu">
+    </Component>
+  </Components>
+
+  <Connections>
+    <Connection name="c1" type="Boolean"/>
+    <Connection name="c2" type="Real"/>
+  </Connections>
+</Graph>

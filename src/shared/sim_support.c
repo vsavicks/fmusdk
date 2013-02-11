@@ -26,8 +26,6 @@
 #include <dlfcn.h> //dlsym()
 #endif
 
-extern FMU fmu;
-
 #if WINDOWS
 int unzip(const char *zipPath, const char *outPath) {
     int code;
@@ -277,7 +275,7 @@ static void printModelDescription(ModelDescription* md){
 #endif // FMI_COSIMULATION  
 }
 
-void loadFMU(const char* fmuFileName) {
+void loadFMU(FMU* fmu, const char* fmuFileName) {
     char* fmuPath;
     char* tmpPath;
     char* xmlPath;
@@ -294,21 +292,21 @@ void loadFMU(const char* fmuFileName) {
     // parse tmpPath\modelDescription.xml
     xmlPath = calloc(sizeof(char), strlen(tmpPath) + strlen(XML_FILE) + 1);
     sprintf(xmlPath, "%s%s", tmpPath, XML_FILE);
-    fmu.modelDescription = parse(xmlPath);
+    fmu->modelDescription = parse(xmlPath);
     free(xmlPath);
-    if (!fmu.modelDescription) exit(EXIT_FAILURE);
-    printModelDescription(fmu.modelDescription);
+    if (!fmu->modelDescription) exit(EXIT_FAILURE);
+    printModelDescription(fmu->modelDescription);
 
     // load the FMU dll
     dllPath = calloc(sizeof(char), strlen(tmpPath) + strlen(DLL_DIR) 
-            + strlen( getModelIdentifier(fmu.modelDescription)) +  strlen(DLL_SUFFIX) + 1);
-    sprintf(dllPath,"%s%s%s%s", tmpPath, DLL_DIR, getModelIdentifier(fmu.modelDescription), DLL_SUFFIX);
-    if (!loadDll(dllPath, &fmu)) {
+            + strlen( getModelIdentifier(fmu->modelDescription)) +  strlen(DLL_SUFFIX) + 1);
+    sprintf(dllPath,"%s%s%s%s", tmpPath, DLL_DIR, getModelIdentifier(fmu->modelDescription), DLL_SUFFIX);
+    if (!loadDll(dllPath, fmu)) {
         // try the alternative directory and suffix
         dllPath = calloc(sizeof(char), strlen(tmpPath) + strlen(DLL_DIR2) 
-                + strlen( getModelIdentifier(fmu.modelDescription)) +  strlen(DLL_SUFFIX2) + 1);
-        sprintf(dllPath,"%s%s%s%s", tmpPath, DLL_DIR2, getModelIdentifier(fmu.modelDescription), DLL_SUFFIX2);
-        if (!loadDll(dllPath, &fmu)) exit(EXIT_FAILURE); 
+                + strlen( getModelIdentifier(fmu->modelDescription)) +  strlen(DLL_SUFFIX2) + 1);
+        sprintf(dllPath,"%s%s%s%s", tmpPath, DLL_DIR2, getModelIdentifier(fmu->modelDescription), DLL_SUFFIX2);
+        if (!loadDll(dllPath, fmu)) exit(EXIT_FAILURE); 
     }
 
     free(dllPath);
@@ -327,15 +325,18 @@ static void doubleToCommaString(char* buffer, double r){
 // if separator is ',', columns are separated by ',' and '.' is used for floating-point numbers.
 // otherwise, the given separator (e.g. ';' or '\t') is to separate columns, and ',' is used 
 // as decimal dot in floating-point numbers.
-void outputRow(FMU *fmu, fmiComponent c, double time, FILE* file, char separator, boolean header) {
+void outputRow(Graph *graph, double time, FILE* file, char separator, boolean header) {
     int k;
     fmiReal r;
     fmiInteger i;
     fmiBoolean b;
     fmiString s;
     fmiValueReference vr;
-    ScalarVariable** vars = fmu->modelDescription->modelVariables;
+    ScalarVariable** vars;
     char buffer[32];
+    int n;
+    FMU* fmu;
+    fmiComponent c;
     
     // print first column
     if (header) 
@@ -351,55 +352,61 @@ void outputRow(FMU *fmu, fmiComponent c, double time, FILE* file, char separator
     }
     
     // print all other columns
-    for (k=0; vars[k]; k++) {
-        ScalarVariable* sv = vars[k];
-        if (getAlias(sv)!=enu_noAlias) continue;
-        if (header) {
-            // output names only
-            if (separator==',') {
-                // treat array element, e.g. print a[1, 2] as a[1.2]
-                char* s = strdup(getName(sv));
-                fprintf(file, "%c", separator);
-                while (*s) {
-                   if (*s!=' ') fprintf(file, "%c", *s==',' ? '.' : *s);
-                   s++;
-                }
-             }
-            else
-                fprintf(file, "%c%s", separator, getName(sv));
-        }
-        else {
-            // output values
-            vr = getValueReference(sv);
-            switch (sv->typeSpec->type){
-                case elm_Real:
-                    fmu->getReal(c, &vr, 1, &r);
-                    if (separator==',') 
-                        fprintf(file, ",%.16g", r);
-                    else {
-                        // separator is e.g. ';' or '\t'
-                        doubleToCommaString(buffer, r);
-                        fprintf(file, "%c%s", separator, buffer);       
+    for (n=0; graph->components[n]; n++) {
+        fmu = (FMU*)graph->components[n]->fmu;
+        c = graph->components[n]->instance;
+        vars = fmu->modelDescription->modelVariables;
+
+        for (k=0; vars[k]; k++) {
+            ScalarVariable* sv = vars[k];
+            if (getAlias(sv)!=enu_noAlias) continue;
+            if (header) {
+                // output names only
+                if (separator==',') {
+                    // treat array element, e.g. print a[1, 2] as a[1.2]
+                    char* s = strdup(getName(sv));
+                    fprintf(file, "%c", separator);
+                    while (*s) {
+                       if (*s!=' ') fprintf(file, "%c", *s==',' ? '.' : *s);
+                       s++;
                     }
-                    break;
-                case elm_Integer:
-                case elm_Enumeration:
-                    fmu->getInteger(c, &vr, 1, &i);
-                    fprintf(file, "%c%d", separator, i);
-                    break;
-                case elm_Boolean:
-                    fmu->getBoolean(c, &vr, 1, &b);
-                    fprintf(file, "%c%d", separator, b);
-                    break;
-                case elm_String:
-                    fmu->getString(c, &vr, 1, &s);
-                    fprintf(file, "%c%s", separator, s);
-                    break;
-                default: 
-                    fprintf(file, "%cNoValueForType=%d", separator,sv->typeSpec->type);
+                 }
+                else
+                    fprintf(file, "%c%s", separator, getName(sv));
             }
-        }
-    } // for
+            else {
+                // output values
+                vr = getValueReference(sv);
+                switch (sv->typeSpec->type){
+                    case elm_Real:
+                        fmu->getReal(c, &vr, 1, &r);
+                        if (separator==',') 
+                            fprintf(file, ",%.16g", r);
+                        else {
+                            // separator is e.g. ';' or '\t'
+                            doubleToCommaString(buffer, r);
+                            fprintf(file, "%c%s", separator, buffer);       
+                        }
+                        break;
+                    case elm_Integer:
+                    case elm_Enumeration:
+                        fmu->getInteger(c, &vr, 1, &i);
+                        fprintf(file, "%c%d", separator, i);
+                        break;
+                    case elm_Boolean:
+                        fmu->getBoolean(c, &vr, 1, &b);
+                        fprintf(file, "%c%d", separator, b);
+                        break;
+                    case elm_String:
+                        fmu->getString(c, &vr, 1, &s);
+                        fprintf(file, "%c%s", separator, s);
+                        break;
+                    default: 
+                        fprintf(file, "%cNoValueForType=%d", separator,sv->typeSpec->type);
+                }
+            }
+        } // for
+    }
     
     // terminate this row
     fprintf(file, "\n"); 
@@ -495,7 +502,7 @@ static void replaceRefsInMessage(const char* msg, char* buffer, int nBuffer, FMU
 #define MAX_MSG_SIZE 1000
 void fmuLogger(fmiComponent c, fmiString instanceName, fmiStatus status,
                fmiString category, fmiString message, ...) {
-    char msg[MAX_MSG_SIZE];
+/*    char msg[MAX_MSG_SIZE];
     char* copy;
     va_list argp;
 
@@ -512,6 +519,7 @@ void fmuLogger(fmiComponent c, fmiString instanceName, fmiStatus status,
     if (!instanceName) instanceName = "?";
     if (!category) category = "?";
     printf("%s %s (%s): %s\n", fmiStatusToString(status), instanceName, category, msg);
+*/
 }
 
 int error(const char* message){
@@ -519,10 +527,10 @@ int error(const char* message){
     return 0;
 }
 
-void parseArguments(int argc, char *argv[], char** fmuFileName, double* tEnd, double* h, int* loggingOn, char* csv_separator) {
+void parseArguments(int argc, char *argv[], char** graphFileName, double* tEnd, double* h, int* loggingOn, char* csv_separator) {
     // parse command line arguments
     if (argc>1) {
-        *fmuFileName = argv[1];
+        *graphFileName = argv[1];
     }
     else {
         printf("error: no fmu file\n");
@@ -555,7 +563,7 @@ void parseArguments(int argc, char *argv[], char** fmuFileName, double* tEnd, do
         switch (argv[5][0]) {
             case 'c': *csv_separator = ','; break; // comma
             case 's': *csv_separator = ';'; break; // semicolon
-            default:  *csv_separator = argv[5][0]; break; // any other char
+            default: *csv_separator = argv[5][0]; break; // any other char
         }
     }
     if (argc>6) {
@@ -565,8 +573,8 @@ void parseArguments(int argc, char *argv[], char** fmuFileName, double* tEnd, do
 }
 
 void printHelp(const char* fmusim) {
-    printf("command syntax: %s <model.fmu> <tEnd> <h> <loggingOn> <csv separator>\n", fmusim);
-    printf("   <model.fmu> .... path to FMU, relative to current dir or absolute, required\n");
+    printf("command syntax: %s <graph.xml> <tEnd> <h> <loggingOn> <csv separator>\n", fmusim);
+    printf("   <graph.xml> .... path to component connection graph xml file, relative to current dir or absolute, required\n");
     printf("   <tEnd> ......... end  time of simulation, optional, defaults to 1.0 sec\n");
     printf("   <h> ............ step size of simulation, optional, defaults to 0.1 sec\n");
     printf("   <loggingOn> .... 1 to activate logging,   optional, defaults to 0\n");

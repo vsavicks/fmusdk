@@ -56,21 +56,21 @@
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
 static void setStartValues(ModelInstance *comp) {
-    r(h_)     =  1;
-    r(v_)     =  0;
-    r(der_v_) = -9.81;
-    r(e_)     =  0.7;
-    pos(0) = r(h_) > 0;
+    comp->r[h_]     =  1;
+    comp->r[v_]     =  0;
+    comp->r[der_v_] = -9.81;
+    comp->r[e_]     =  0.7;
+    pos(0) = comp->r[h_] > 0;
 }
 
 // called by fmiGetReal, fmiGetContinuousStates and fmiGetDerivatives
 static fmiReal getReal(ModelInstance* comp, fmiValueReference vr){
     switch (vr) {
-        case h_     : return r(h_);
-        case der_h_ : return r(v_);
-        case v_     : return r(v_);
-        case der_v_ : return r(der_v_);
-        case e_     : return r(e_);
+        case h_     : return comp->r[h_];
+        case der_h_ : return comp->r[v_];
+        case v_     : return comp->r[v_];
+        case der_v_ : return comp->r[der_v_];
+        case e_     : return comp->r[e_];
         default: return 0;
     }
 }
@@ -85,7 +85,7 @@ static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
 
 static fmiReal getEventIndicator(ModelInstance* comp, int z) {
     switch (z) {
-        case 0 : return r(h_) + (pos(0) ? EPS_INDICATORS : -EPS_INDICATORS);
+        case 0 : return comp->r[h_] + (pos(0) ? EPS_INDICATORS : -EPS_INDICATORS);
         default: return 0;
     }
 }
@@ -93,9 +93,9 @@ static fmiReal getEventIndicator(ModelInstance* comp, int z) {
 // Used to set the next time event, if any.
 static void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
     if (pos(0)) {
-        r(v_) = - r(e_) * r(v_);
+        comp->r[v_] = - comp->r[e_] * comp->r[v_];
     }
-    pos(0) = r(h_) > 0;
+    pos(0) = comp->r[h_] > 0;
     eventInfo->iterationConverged  = fmiTrue;
     eventInfo->stateValueReferencesChanged = fmiFalse;
     eventInfo->stateValuesChanged  = fmiTrue;

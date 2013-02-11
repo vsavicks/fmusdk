@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<fmiModelDescription
+  fmiVersion="1.0"
+  modelName="waterTank"
+  modelIdentifier="waterTank"
+  guid="{vc4e810f-3df3-4a00-8276-176fa3c9f003}"
+  numberOfContinuousStates="1"
+  numberOfEventIndicators="2">
+<ModelVariables>
+  <ScalarVariable name="H" valueReference="0" description="upper threshold" 
+                  variability="parameter">
+     <Real start="14" fixed="true"/>
+  </ScalarVariable>
+  <ScalarVariable name="L" valueReference="1" description="upper threshold" 
+                  variability="parameter">
+     <Real start="1" fixed="true"/>
+  </ScalarVariable>
+  <ScalarVariable name="v1" valueReference="2" description="upper threshold" 
+                  variability="parameter">
+     <Real start="3" fixed="true"/>
+  </ScalarVariable>
+  <ScalarVariable name="v2" valueReference="3" description="upper threshold" 
+                  variability="parameter">
+     <Real start="2" fixed="true"/>
+  </ScalarVariable>
+  <ScalarVariable name="level" valueReference="4" description="water level, used as state" causality="output">
+     <Real start="1" fixed="true"/>
+  </ScalarVariable>
+  <ScalarVariable name="der(level)" valueReference="5" description="water level rate">
+     <Real/>
+  </ScalarVariable> 
+  <ScalarVariable name="pump" valueReference="0" description="pump state" causality="output">
+     <Boolean start="true"/>
+  </ScalarVariable>
+</ModelVariables>

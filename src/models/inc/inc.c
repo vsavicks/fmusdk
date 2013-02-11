@@ -35,7 +35,7 @@
 // Set values for all variables that define a start value
 // Settings used unless changed by fmiSetX before fmiInitialize
 static void setStartValues(ModelInstance *comp) {
-    i(counter_) = 1;
+    comp->i[counter_] = 1;
 }
 
 // called by fmiInitialize() after setting eventInfo to defaults
@@ -48,8 +48,8 @@ static void initialize(ModelInstance* comp, fmiEventInfo* eventInfo) {
 // called by fmiEventUpdate() after setting eventInfo to defaults
 // Used to set the next time event, if any.
 static void eventUpdate(ModelInstance* comp, fmiEventInfo* eventInfo) {
-    i(counter_) += 1;
-    if (i(counter_) == 13) 
+    comp->i[counter_] += 1;
+    if (comp->i[counter_] == 13) 
         eventInfo->terminateSimulation = fmiTrue;
     else {
         eventInfo->upcomingTimeEvent   = fmiTrue;

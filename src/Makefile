@@ -1,7 +1,7 @@
 # fmusim makefile for Mac OS X
 
 EXECS = \
-	fmusim_cs \
+	fmusim_cs #\
 	fmusim_me
 
 # Build simulators for co_simulation and model_exchange and then build the .fmu files.

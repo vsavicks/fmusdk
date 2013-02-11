@@ -62,11 +62,11 @@
 
 void fmuLogger(fmiComponent c, fmiString instanceName, fmiStatus status, fmiString category, fmiString message, ...);
 int unzip(const char *zipPath, const char *outPath);
-void parseArguments(int argc, char *argv[], char** fmuFileName, double* tEnd, double* h, int* loggingOn, char* csv_separator);
-void loadFMU(const char* fmuFileName);
+void parseArguments(int argc, char *argv[], char** graphFileName, double* tEnd, double* h, int* loggingOn, char* csv_separator);
+void loadFMU(FMU *fmu, const char* fmuFileName);
 #ifndef _MSC_VER
 typedef int boolean; 
 #endif
-void outputRow(FMU *fmu, fmiComponent c, double time, FILE* file, char separator, boolean header);
+void outputRow(Graph *graph, double time, FILE* file, char separator, boolean header);
 int error(const char* message);
 void printHelp(const char* fmusim);
